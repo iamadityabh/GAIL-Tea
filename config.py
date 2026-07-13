@@ -11,11 +11,15 @@ if not os.getenv("GROQ_API_KEY"):
     st.error("❌ ERROR: GROQ_API_KEY is missing! Please check your .env file.")
     st.stop()
 
+if not os.getenv("DATABASE_URL"):
+    st.error("DATABASE_URL is missing!")
+    st.stop()
+
 # Cache DB Engine
 @st.cache_resource
 def get_db_engine():
-    DB_URL = "postgresql+psycopg2://postgres:root@localhost:5432/GTI_2"
-    return create_engine(DB_URL)
+    DATABASE_URL=os.getenv("DATABASE_URL")
+    return create_engine(DATABASE_URL, pool_pre_ping=True)
 
 # Cache Embedder
 @st.cache_resource
