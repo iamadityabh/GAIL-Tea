@@ -1,4 +1,5 @@
 import json
+import os
 import psycopg2
 from langchain_core.prompts import PromptTemplate
 from config import get_llms, get_embedder
@@ -91,7 +92,7 @@ def handle_overall_query(user_question, current_mem_key=None):
 
 def handle_overall_query_api(user_question: str) -> str:
     try:
-        conn = psycopg2.connect(dbname="GTI_2", user="postgres", password="root", host="localhost")
+        conn = psycopg2.connect(os.getenv("DATABASE_URL"))
         cur = conn.cursor()
         
         # Fetch cached departments

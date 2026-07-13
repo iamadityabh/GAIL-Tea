@@ -1,4 +1,5 @@
 import json
+import os
 import psycopg2
 from langchain_core.prompts import PromptTemplate
 from config import get_llms, get_embedder
@@ -40,7 +41,7 @@ def handle_event_query(user_question, current_mem_key=None):
     print("⚡ 1. Running Vector Search on Events...")
     try:
         # Connect directly for pgvector
-        conn = psycopg2.connect(dbname="GTI_2", user="postgres", password="root", host="localhost")
+        conn = psycopg2.connect(os.getenv("DATABASE_URL"))
         cur = conn.cursor()
 
         # Encode the user's question
@@ -90,7 +91,7 @@ def handle_event_query(user_question, current_mem_key=None):
 
 def handle_event_query_api(user_question: str) -> str:
     try:
-        conn = psycopg2.connect(dbname="GTI_2", user="postgres", password="root", host="localhost")
+        conn = psycopg2.connect(os.getenv("DATABASE_URL"))
         cur = conn.cursor()
 
         question_vector = embedder.encode(user_question).tolist()
