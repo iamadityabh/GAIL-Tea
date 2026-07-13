@@ -321,67 +321,147 @@ def delete_employee(folder_name: str) -> dict:
 # ---------------- EVENTS ----------------
 def ingest_single_event(event_id: str) -> dict:
     folder_path = Path("events") / event_id
-    
-    # VALIDATION 1: Check if folder exists
+
     if not folder_path.exists() or not folder_path.is_dir():
-        return {"status": "error", "message": f"Folder 'events/{event_id}' not found."}
-        
+        return {
+            "status": "error",
+            "message": f"Folder 'events/{event_id}' not found."
+        }
+
     conn = None
     cur = None
+
     try:
         engine = get_db_engine()
         conn = engine.raw_connection()
         cur = conn.cursor()
 
-        # 🔥 VALIDATION 2: Duplicate Check for Events (Strict Check)
-        cur.execute("SELECT 1 FROM company_events WHERE event_id = %s;", (event_id,))
+        cur.execute(
+            "SELECT 1 FROM company_events WHERE event_id = %s;",
+            (event_id,)
+        )
+
         if cur.fetchone():
-            return {"status": "error", "message": f"Event ID '{event_id}' already exists! Please use the 'Update Data' section to modify it."}
+            return {
+                "status": "error",
+                "message": f"Event ID '{event_id}' already exists! Please use the 'Update Data' section to modify it."
+            }
 
         raw_text = extract_text_from_folder(folder_path)
+
         if not raw_text.strip():
-            return {"status": "error", "message": f"No readable text found in 'events/{event_id}'."}
+            return {
+                "status": "error",
+                "message": f"No readable text found in 'events/{event_id}'."
+            }
 
         print(f"\n📅 Processing Event Folder: {event_id}")
-        
-        # Load Models
+
         embedder, _, _, event_chain = get_models()
 
-        # Extract data using LLM
-        event_json = parse_with_llm(raw_text, event_chain, f"Event Documents ({event_id})")
-        event_name = event_json.get("event_name", f"Event {event_id}")
+        event_json = parse_with_llm(
+            raw_text,
+            event_chain,
+            f"Event Documents ({event_id})"
+        )
+
+        event_name = event_json.get(
+            "event_name",
+            f"Event {event_id}"
+        )
+
+        event_date = event_json.get("event_start_date")
+
+        invalid_dates = {
+            "not mentioned",
+            "not specified",
+            "unknown",
+            "n/a",
+            "none",
+            "null",
+            ""
+        }
+
+        if (
+            event_date is None
+            or str(event_date).strip().lower() in invalid_dates
+        ):
+            event_date = None
+
+        location = event_json.get("location")
+
+        if not location:
+            location = "Not specified"
+
+        description = event_json.get("about_the_event")
+
+        if not description:
+            description = "No description available"
 
         json_string = json.dumps(event_json)
-        print("   ├── Creating Vector Embedding for Event...")
-        embedding_vector = embedder.encode(json_string).tolist()
 
-        # 🔥 INSERT WITH ALL NEW HYBRID COLUMNS
-        cur.execute("""
-            INSERT INTO company_events (event_id, event_name, event_date, location, description, metadata, embedding) 
+        print("   ├── Creating Vector Embedding for Event...")
+
+        embedding_vector = embedder.encode(
+            json_string
+        ).tolist()
+
+        cur.execute(
+            """
+            INSERT INTO company_events (
+                event_id,
+                event_name,
+                event_date,
+                location,
+                description,
+                metadata,
+                embedding
+            )
             VALUES (%s, %s, %s, %s, %s, %s, %s);
-        """, (
-            event_id, 
-            event_name, 
-            event_json.get("event_start_date", "Not specified"), 
-            event_json.get("location", "Not specified"),
-            event_json.get("about_the_event", "No description available"),
-            json_string, 
-            embedding_vector
-        ))
-        
+            """,
+            (
+                event_id,
+                event_name,
+                event_date,
+                location,
+                description,
+                json_string,
+                embedding_vector
+            )
+        )
+
         conn.commit()
-        success_msg = f"Event '{event_name}' (ID: {event_id}) ingested successfully!"
+
+        success_msg = (
+            f"Event '{event_name}' (ID: {event_id}) "
+            f"ingested successfully!"
+        )
+
         print(f"🚀 {success_msg}")
-        return {"status": "success", "message": success_msg}
-        
+
+        return {
+            "status": "success",
+            "message": success_msg
+        }
+
     except Exception as e:
-        if conn: conn.rollback()
+        if conn:
+            conn.rollback()
+
         print(f"❌ Error ingesting event: {e}")
-        return {"status": "error", "message": f"Ingestion failed: {str(e)}"}
+
+        return {
+            "status": "error",
+            "message": f"Ingestion failed: {str(e)}"
+        }
+
     finally:
-        if cur: cur.close()
-        if conn: conn.close()
-        
+        if cur:
+            cur.close()
+
+        if conn:
+            conn.close()
+                    
 def delete_event(event_id: str) -> dict:
     conn = None
     cur = None
