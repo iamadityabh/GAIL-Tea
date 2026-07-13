@@ -1,5 +1,4 @@
 import json
-import psycopg2
 from pathlib import Path
 from langchain_core.prompts import PromptTemplate
 
@@ -9,21 +8,11 @@ import pytesseract
 from pdf2image import convert_from_path
 
 # --- IMPORT MODELS FROM CONFIG ---
-# Yeh line aapki config.py se embedder aur Groq LLM ko load karegi
-from config import get_embedder, get_llms 
+# Yeh line aapki config.py se embedder, Groq LLM, aur db_engine ko load karegi
+from config import get_embedder, get_llms, get_db_engine 
 
 # ==========================================
-# 1. Configurations
-# ==========================================
-DB_CONFIG = {
-    "dbname": "GTI_2",
-    "user": "postgres",
-    "password": "root",  # Apna actual password yahan check kar lena
-    "host": "localhost"
-}
-
-# ==========================================
-# 2. LLM Prompts Setup
+# 1. LLM Prompts Setup
 # ==========================================
 info_prompt = PromptTemplate.from_template("""
 You are a strict data extractor. Extract the details from the raw text below and return ONLY a JSON object.
@@ -105,7 +94,7 @@ TEXT PROVIDED:
 """)
 
 # ==========================================
-# 3. Model Loader (UPGRADED FOR GROQ)
+# 2. Model Loader (UPGRADED FOR GROQ)
 # ==========================================
 def get_models():
     print("Loading Models from config.py... (Embedder & Groq API)")
@@ -122,7 +111,7 @@ def get_models():
     return embedder, info_chain, metadata_chain, event_chain
 
 # ==========================================
-# 4. Helper Functions (OCR & PDF)
+# 3. Helper Functions (OCR & PDF)
 # ==========================================
 def extract_text_from_pdf(file_path):
     text = ""
@@ -181,7 +170,7 @@ def extract_text_from_folder(folder_path: Path):
     return combined_text
 
 # ==========================================
-# 5. CORE FUNCTIONS
+# 4. CORE FUNCTIONS
 # ==========================================
 
 # ---------------- EMPLOYEES ----------------
@@ -199,7 +188,8 @@ def ingest_single_employee(folder_name: str) -> dict:
     cur = None
     
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        engine = get_db_engine()
+        conn = engine.raw_connection()
         cur = conn.cursor()
 
         cur.execute("SELECT 1 FROM employees WHERE employee_id = %s;", (folder_name,))
@@ -299,7 +289,8 @@ def delete_employee(folder_name: str) -> dict:
     conn = None
     cur = None
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        engine = get_db_engine()
+        conn = engine.raw_connection()
         cur = conn.cursor()
 
         cur.execute("SELECT employee_name FROM employees WHERE employee_id = %s;", (folder_name,))
@@ -329,7 +320,8 @@ def ingest_single_event(event_id: str) -> dict:
     conn = None
     cur = None
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        engine = get_db_engine()
+        conn = engine.raw_connection()
         cur = conn.cursor()
 
         cur.execute("SELECT 1 FROM company_events WHERE event_id = %s;", (event_id,))
@@ -381,7 +373,8 @@ def delete_event(event_id: str) -> dict:
     conn = None
     cur = None
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        engine = get_db_engine()
+        conn = engine.raw_connection()
         cur = conn.cursor()
         
         cur.execute("SELECT event_name FROM company_events WHERE event_id = %s;", (event_id,))
@@ -399,7 +392,7 @@ def delete_event(event_id: str) -> dict:
         if conn: conn.close()
 
 # ==========================================
-# 6. Testing Block (Terminal Run)
+# 5. Testing Block (Terminal Run)
 # ==========================================
 if __name__ == "__main__":
     print("\n🛠️ Database Manager (Using Groq API)")
