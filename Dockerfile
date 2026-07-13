@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 4. Set the working directory inside the container
+# 4. Set the working directory inside 
 WORKDIR /app
 
 # 5. Copy requirements file
