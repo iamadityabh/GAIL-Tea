@@ -1,5 +1,5 @@
 import json
-import streamlit as st
+import sys
 from sqlalchemy import text
 from langchain_core.prompts import PromptTemplate
 from config import get_llms, get_db_engine, get_embedder
@@ -91,21 +91,31 @@ json_patcher_chain = json_patcher_prompt | extractor_llm
 # ==========================================
 # 2. STATE MACHINE (Conversational Flow)
 # ==========================================
-def handle_conversational_update(user_input, chat_memory_key):
+def handle_conversational_update(user_input, session_state=None, chat_memory_key="chat_history"):
+    """
+    Replaced st.session_state with a standard Python dictionary `session_state`.
+    Pass a dictionary here to maintain state and memory across conversational turns.
+    """
+    if session_state is None:
+        session_state = {}
+        
+    if chat_memory_key not in session_state:
+        session_state[chat_memory_key] = []
+        
     state_key = "update_stage"
     context_key = "update_context" 
     
-    if state_key not in st.session_state:
-        st.session_state[state_key] = "INIT"
-        st.session_state[context_key] = {}
+    if state_key not in session_state:
+        session_state[state_key] = "INIT"
+        session_state[context_key] = {}
 
-    stage = st.session_state[state_key]
+    stage = session_state[state_key]
     conn = engine.connect()
 
     try:
         # STAGE 0/1: INIT -> Extraction & Target Search
         if stage == "INIT":
-            st.write("🧠 *Analyzing update request...*")
+            print("🧠 *Analyzing update request...*")
             response = update_extractor_chain.invoke({"user_input": user_input})
             extracted_data = json.loads(response.content)
             
@@ -115,11 +125,11 @@ def handle_conversational_update(user_input, chat_memory_key):
             
             if category == "unknown" or not target or not changes:
                 reply = "I couldn't clearly understand. Could you specify the entity (employee/event/dept) and what needs changing?"
-                st.session_state[chat_memory_key].append({"role": "assistant", "content": reply})
-                st.markdown(reply)
+                session_state[chat_memory_key].append({"role": "assistant", "content": reply})
+                print(reply)
                 return
 
-            st.session_state[context_key] = extracted_data
+            session_state[context_key] = extracted_data
             current_full_data = {}
             
             # Employee Search
@@ -139,9 +149,9 @@ def handle_conversational_update(user_input, chat_memory_key):
                         "phone_no": emp[3], "position": emp[4], "dept_id": emp[5],
                         "metadata": emp[6] if emp[6] else {}
                     }
-                    st.session_state[context_key]['db_id'] = emp[0]
-                    st.session_state[context_key]['db_name'] = emp[1]
-                    st.session_state[context_key]['current_data'] = current_full_data
+                    session_state[context_key]['db_id'] = emp[0]
+                    session_state[context_key]['db_name'] = emp[1]
+                    session_state[context_key]['current_data'] = current_full_data
                 else:
                     reply = f"Couldn't exactly match an employee for '{target}'."
 
@@ -157,9 +167,9 @@ def handle_conversational_update(user_input, chat_memory_key):
                         "event_id": evt[0], "event_name": evt[1], "event_date": str(evt[2]),
                         "metadata": evt[3] if evt[3] else {}
                     }
-                    st.session_state[context_key]['db_id'] = evt[0]
-                    st.session_state[context_key]['db_name'] = evt[1]
-                    st.session_state[context_key]['current_data'] = current_full_data
+                    session_state[context_key]['db_id'] = evt[0]
+                    session_state[context_key]['db_name'] = evt[1]
+                    session_state[context_key]['current_data'] = current_full_data
                 else:
                     reply = f"Could not precisely find the event '{target}'."
 
@@ -175,35 +185,35 @@ def handle_conversational_update(user_input, chat_memory_key):
                         "department_id": dep[0], "department_name": dep[1], 
                         "head_name": dep[2], "landline_ext": dep[3]
                     }
-                    st.session_state[context_key]['db_id'] = dep[0]
-                    st.session_state[context_key]['db_name'] = dep[1]
-                    st.session_state[context_key]['current_data'] = current_full_data
+                    session_state[context_key]['db_id'] = dep[0]
+                    session_state[context_key]['db_name'] = dep[1]
+                    session_state[context_key]['current_data'] = current_full_data
                 else:
                     reply = f"Could not precisely find the department '{target}'."
 
             # Generate Confirmation Message
-            if 'db_id' in st.session_state[context_key]:
-                st.write("🔍 *Verifying existing data...*")
+            if 'db_id' in session_state[context_key]:
+                print("🔍 *Verifying existing data...*")
                 conf_response = confirmation_chain.invoke({
                     "current_data": json.dumps(current_full_data),
                     "changes": json.dumps(changes)
                 })
-                reply = f"🔍 Found **{st.session_state[context_key]['db_name']}**.\n\n" + conf_response.content + "\n\n**Shall I go ahead and apply these changes? (Confirm / Cancel)**"
-                st.session_state[state_key] = "CONFIRM_CHANGES"
+                reply = f"🔍 Found **{session_state[context_key]['db_name']}**.\n\n" + conf_response.content + "\n\n**Shall I go ahead and apply these changes? (Confirm / Cancel)**"
+                session_state[state_key] = "CONFIRM_CHANGES"
 
-            st.session_state[chat_memory_key].append({"role": "assistant", "content": reply})
-            st.markdown(reply)
+            session_state[chat_memory_key].append({"role": "assistant", "content": reply})
+            print(reply)
 
         # STAGE 2: EXECUTE CHANGES
         elif stage == "CONFIRM_CHANGES":
             if user_input.strip().lower() in ['confirm', 'yes', 'y', 'do it']:
-                ctx = st.session_state[context_key]
+                ctx = session_state[context_key]
                 category = ctx['category']
                 db_id = ctx['db_id']
                 changes = ctx['changes_requested']
                 current_data = ctx['current_data']
                 
-                st.write("⚙️ *Executing database updates...*")
+                print("⚙️ *Executing database updates...*")
                 
                 if category == "employee":
                     static_keys = ['age', 'phone_no', 'position', 'dept_id', 'employee_name']
@@ -268,26 +278,26 @@ def handle_conversational_update(user_input, chat_memory_key):
                         # 🔥 SYNC CACHE AFTER DEPT UPDATE
                         conn.commit()
                         refresh_departments_cache(engine)
-                        st.write("├── ✅ Department updated and Cache Synchronized.")
+                        print("├── ✅ Department updated and Cache Synchronized.")
 
                 conn.commit()
                 reply = f"✅ Update applied successfully to **{ctx['db_name']}**! All systems synchronized."
                 
-                st.session_state[state_key] = "INIT"
-                st.session_state[context_key] = {}
-                st.session_state[chat_memory_key].append({"role": "assistant", "content": reply})
-                st.markdown(reply)
+                session_state[state_key] = "INIT"
+                session_state[context_key] = {}
+                session_state[chat_memory_key].append({"role": "assistant", "content": reply})
+                print(reply)
                 
             else:
-                st.session_state[state_key] = "INIT"
+                session_state[state_key] = "INIT"
                 reply = "Update cancelled safely. No changes were made."
-                st.session_state[chat_memory_key].append({"role": "assistant", "content": reply})
-                st.markdown(reply)
+                session_state[chat_memory_key].append({"role": "assistant", "content": reply})
+                print(reply)
 
     except Exception as e:
         conn.rollback()
-        st.error(f"Execution Error: {e}")
-        st.session_state[state_key] = "INIT" 
+        print(f"❌ Execution Error: {e}")
+        session_state[state_key] = "INIT" 
     finally:
         conn.close()
 

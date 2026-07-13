@@ -7,7 +7,6 @@ langchain-core
 langchain-experimental
 sqlalchemy
 langchain-ollama
-streamlit
 langchain-groq
 torchvision
 python-dotenv

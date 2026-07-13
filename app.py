@@ -1,4 +1,4 @@
-import streamlit as st
+import sys
 from sqlalchemy import text
 from config import get_db_engine
 from query_single import handle_single_profile
@@ -7,164 +7,184 @@ from query_events import handle_event_query
 from ingest import ingest_single_employee, delete_employee, ingest_single_event, delete_event
 from update_agent import handle_conversational_update, refresh_departments_cache
 
-st.set_page_config(page_title="GTI Enterprise HR", page_icon="🏢", layout="wide")
 engine = get_db_engine()
 
-# ==========================================
-# Sidebar Navigation 
-# ==========================================
-st.sidebar.title("🏢 GTI HR Portal")
-st.sidebar.markdown("---")
-main_mode = st.sidebar.radio(
-    "👉 Select Operation Mode:", 
-    ["🔍 Ask a Query", "➕ Add Data", "✏️ Update Data"]
-)
-st.sidebar.markdown("---")
+def main():
+    # Replacing st.session_state with a standard dictionary for the lifespan of the app
+    session_state = {
+        "mem_update_agent": [{"role": "assistant", "content": "Hello! I am your Database Agent. What would you like to update today?"}],
+        "mem_single_profile": [{"role": "assistant", "content": "Hello! I am ready to answer your Single Employee Profile queries."}],
+        "mem_overall": [{"role": "assistant", "content": "Hello! I am ready to answer your Team & Company-wide queries."}],
+        "mem_events": [{"role": "assistant", "content": "Hello! I am ready to answer your Event Related queries."}]
+    }
 
-# ==========================================
-# 1. ADD DATA SECTION
-# ==========================================
-if main_mode == "➕ Add Data":
-    st.title("➕ Add or Delete Records")
-    add_option = st.sidebar.selectbox("Select Category:", ["👤 Manage Employees", "🏢 Manage Departments", "📅 Manage Events"])
-    
-    # --- EMPLOYEES ---
-    if add_option == "👤 Manage Employees":
-        st.subheader("Add or Remove Employee Data")
-        folder_name = st.text_input("Enter Employee Folder/ID (e.g., EMP-101):").strip()
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🚀 Ingest Employee Data", use_container_width=True, type="primary") and folder_name:
-                with st.spinner(f"Ingesting data for '{folder_name}'..."):
-                    res = ingest_single_employee(folder_name)
-                    st.success(res.get("message")) if res.get("status") == "success" else st.error(res.get("message"))
-        with col2:
-            if st.button("🗑️ Delete Employee", use_container_width=True) and folder_name:
-                with st.spinner(f"Deleting records for '{folder_name}'..."):
-                    res = delete_employee(folder_name)
-                    st.success(res.get("message")) if res.get("status") == "success" else st.error(res.get("message"))
-
-    # --- DEPARTMENTS (With Cache Sync) ---
-    elif add_option == "🏢 Manage Departments":
-        st.subheader("Add or Delete a Department")
-        dept_id = st.text_input("Enter Department ID (e.g., D-01, HR-Tech):").strip()
-        dept_name = st.text_input("Enter Department Name (Needed for Adding):").strip()
-        head_name = st.text_input("Enter Department Head Name (e.g., Mr. Sharma):").strip()
-        landline = st.text_input("Enter 3-4 Digit Landline Ext (e.g., 4012):").strip()
+    while True:
+        print("\n" + "="*50)
+        print("🏢 GTI Enterprise HR Portal (Terminal Edition)")
+        print("="*50)
+        print("1. ➕ Add Data")
+        print("2. ✏️ Update Data (AI Agent)")
+        print("3. 🔍 Ask a Query")
+        print("4. ❌ Exit")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("➕ Add Department", use_container_width=True, type="primary"):
-                if dept_id and dept_name:
-                    try:
-                        with engine.connect() as conn:
-                            conn.execute(
-                                text("""
-                                    INSERT INTO departments (department_id, department_name, head_name, landline_ext) 
-                                    VALUES (:id, :name, :head, :landline)
-                                """), 
-                                {"id": dept_id, "name": dept_name, "head": head_name, "landline": landline}
-                            )
-                            conn.commit()
-                        # 🔥 SYNC CACHE AFTER ADD
-                        refresh_departments_cache(engine)
-                        st.success(f"Department '{dept_name}' added and cache synced!")
-                    except Exception as e:
-                        st.error(f"Error adding department: {e}")
-                else:
-                    st.warning("Please provide at least Department ID and Name.")
+        main_mode = input("\n👉 Select Operation Mode (1-4): ").strip()
+
+        # ==========================================
+        # 1. ADD DATA SECTION
+        # ==========================================
+        if main_mode == "1":
+            print("\n--- ➕ Add or Delete Records ---")
+            print("1. 👤 Manage Employees")
+            print("2. 🏢 Manage Departments")
+            print("3. 📅 Manage Events")
+            print("4. 🔙 Back to Main Menu")
+            
+            add_option = input("Select Category (1-4): ").strip()
+            
+            # --- EMPLOYEES ---
+            if add_option == "1":
+                folder_name = input("\nEnter Employee Folder/ID (e.g., EMP-101): ").strip()
+                if not folder_name: continue
+                
+                action = input("Type '1' to Ingest or '2' to Delete: ").strip()
+                if action == "1":
+                    print(f"⏳ Ingesting data for '{folder_name}'...")
+                    res = ingest_single_employee(folder_name)
+                    print(f"✅ {res.get('message')}" if res.get("status") == "success" else f"❌ {res.get('message')}")
+                elif action == "2":
+                    print(f"⏳ Deleting records for '{folder_name}'...")
+                    res = delete_employee(folder_name)
+                    print(f"✅ {res.get('message')}" if res.get("status") == "success" else f"❌ {res.get('message')}")
+
+            # --- DEPARTMENTS ---
+            elif add_option == "2":
+                dept_id = input("\nEnter Department ID (e.g., D-01, HR-Tech): ").strip()
+                if not dept_id: continue
+                
+                action = input("Type '1' to Add/Update or '2' to Delete: ").strip()
+                if action == "1":
+                    dept_name = input("Enter Department Name: ").strip()
+                    head_name = input("Enter Department Head Name: ").strip()
+                    landline = input("Enter 3-4 Digit Landline Ext: ").strip()
                     
-        with col2:
-            if st.button("🗑️ Delete Department", use_container_width=True):
-                if dept_id:
+                    if dept_name:
+                        try:
+                            with engine.connect() as conn:
+                                conn.execute(
+                                    text("""
+                                        INSERT INTO departments (department_id, department_name, head_name, landline_ext) 
+                                        VALUES (:id, :name, :head, :landline)
+                                    """), 
+                                    {"id": dept_id, "name": dept_name, "head": head_name, "landline": landline}
+                                )
+                                conn.commit()
+                            refresh_departments_cache(engine)
+                            print(f"✅ Department '{dept_name}' added and cache synced!")
+                        except Exception as e:
+                            print(f"❌ Error adding department: {e}")
+                    else:
+                        print("⚠️ Please provide a Department Name.")
+                        
+                elif action == "2":
                     try:
                         with engine.connect() as conn:
                             conn.execute(text("DELETE FROM departments WHERE department_id = :id"), {"id": dept_id})
                             conn.commit()
-                        # 🔥 SYNC CACHE AFTER DELETE
                         refresh_departments_cache(engine)
-                        st.success(f"Department ID {dept_id} deleted and cache synced!")
+                        print(f"✅ Department ID {dept_id} deleted and cache synced!")
                     except Exception as e:
-                        st.error(f"Error deleting department: {e}")
-                else:
-                    st.warning("Please provide a Department ID to delete.")
+                        print(f"❌ Error deleting department: {e}")
 
-    # --- EVENTS ---
-    elif add_option == "📅 Manage Events":
-        st.subheader("Add or Remove Event Data")
-        st.info("Place your event PDFs and TXT files in the `events/<Event-ID>` folder before ingesting.")
-        event_id = st.text_input("Enter Event Folder/ID (e.g., EVT-01):").strip()
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🚀 Ingest Event Data", use_container_width=True, type="primary") and event_id:
-                with st.spinner(f"Extracting and ingesting data for '{event_id}'..."):
+            # --- EVENTS ---
+            elif add_option == "3":
+                print("ℹ️ Note: Place your event PDFs and TXT files in the 'events/<Event-ID>' folder before ingesting.")
+                event_id = input("\nEnter Event Folder/ID (e.g., EVT-01): ").strip()
+                if not event_id: continue
+                
+                action = input("Type '1' to Ingest or '2' to Delete: ").strip()
+                if action == "1":
+                    print(f"⏳ Extracting and ingesting data for '{event_id}'...")
                     res = ingest_single_event(event_id)
-                    st.success(res.get("message")) if res.get("status") == "success" else st.error(res.get("message"))
-        with col2:
-            if st.button("🗑️ Delete Event", use_container_width=True) and event_id:
-                with st.spinner(f"Deleting records for '{event_id}'..."):
+                    print(f"✅ {res.get('message')}" if res.get("status") == "success" else f"❌ {res.get('message')}")
+                elif action == "2":
+                    print(f"⏳ Deleting records for '{event_id}'...")
                     res = delete_event(event_id)
-                    st.success(res.get("message")) if res.get("status") == "success" else st.error(res.get("message"))
+                    print(f"✅ {res.get('message')}" if res.get("status") == "success" else f"❌ {res.get('message')}")
 
-
-# ==========================================
-# 2. UPDATE DATA SECTION (Agent Mode)
-# ==========================================
-elif main_mode == "✏️ Update Data":
-    st.title("✏️ AI Update Agent")
-    st.caption("Tell me what you want to modify in natural language. (e.g., 'Update Aditya's phone to 98765' or 'Change IT dept head to Ms. Aditi')")
-    
-    mem_key = "mem_update_agent"
-    if mem_key not in st.session_state:
-        st.session_state[mem_key] = [{"role": "assistant", "content": "Hello! I am your Database Agent. What would you like to update today?"}]
-    
-    for msg in st.session_state[mem_key]:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    if user_input := st.chat_input("E.g., Update the IT dept head to Amit"):
-        st.session_state[mem_key].append({"role": "user", "content": user_input})
-        with st.chat_message("user"):
-            st.markdown(user_input)
+        # ==========================================
+        # 2. UPDATE DATA SECTION (Agent Mode)
+        # ==========================================
+        elif main_mode == "2":
+            print("\n--- ✏️ AI Update Agent ---")
+            print("Tell me what you want to modify (Type 'exit' to return).")
             
-        with st.chat_message("assistant"):
-            handle_conversational_update(user_input, mem_key)
+            mem_key = "mem_update_agent"
+            # Display chat history for this session
+            for msg in session_state[mem_key]:
+                print(f"[{msg['role'].capitalize()}]: {msg['content']}")
+                
+            while True:
+                user_input = input("\nYou: ").strip()
+                if user_input.lower() in ['exit', 'quit', 'back']: break
+                if not user_input: continue
+                
+                session_state[mem_key].append({"role": "user", "content": user_input})
+                print("[Assistant]: ", end="")
+                # Pass session_state to maintain continuity
+                handle_conversational_update(user_input, session_state=session_state, chat_memory_key=mem_key)
 
-
-# ==========================================
-# 3. ASK A QUERY SECTION
-# ==========================================
-elif main_mode == "🔍 Ask a Query":
-    st.title("🤖 HR Assistant")
-    query_option = st.sidebar.selectbox(
-        "What type of query do you have?",
-        ["👤 Single Employee Profile", "📊 Team & Company-wide (Overall)", "📅 Event Related Query"]
-    )
-
-    memory_keys = {
-        "👤 Single Employee Profile": "mem_single_profile",
-        "📊 Team & Company-wide (Overall)": "mem_overall",
-        "📅 Event Related Query": "mem_events"
-    }
-    current_mem_key = memory_keys[query_option]
-    
-    if current_mem_key not in st.session_state:
-        st.session_state[current_mem_key] = [{"role": "assistant", "content": f"Hello! I am ready to answer your **{query_option[2:]}** queries."}]
-    
-    for msg in st.session_state[current_mem_key]:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    if user_question := st.chat_input(f"Ask about {query_option[2:]}..."):
-        st.session_state[current_mem_key].append({"role": "user", "content": user_question})
-        with st.chat_message("user"):
-            st.markdown(user_question)
+        # ==========================================
+        # 3. ASK A QUERY SECTION
+        # ==========================================
+        elif main_mode == "3":
+            print("\n--- 🤖 HR Assistant ---")
+            print("1. 👤 Single Employee Profile")
+            print("2. 📊 Team & Company-wide (Overall)")
+            print("3. 📅 Event Related Query")
+            print("4. 🔙 Back to Main Menu")
             
-        with st.chat_message("assistant"):
-            if query_option == "👤 Single Employee Profile":
-                handle_single_profile(user_question, current_mem_key)
-            elif query_option == "📊 Team & Company-wide (Overall)":
-                handle_overall_query(user_question, current_mem_key)
-            elif query_option == "📅 Event Related Query":
-                handle_event_query(user_question, current_mem_key)
+            q_choice = input("Select query type (1-4): ").strip()
+            
+            query_map = {
+                "1": ("Single Employee Profile", "mem_single_profile", handle_single_profile),
+                "2": ("Team & Company-wide", "mem_overall", handle_overall_query),
+                "3": ("Event Related Query", "mem_events", handle_event_query)
+            }
+            
+            if q_choice in query_map:
+                name, mem_key, handler_func = query_map[q_choice]
+                print(f"\n--- Chat: {name} (Type 'exit' to return) ---")
+                
+                for msg in session_state[mem_key]:
+                    print(f"[{msg['role'].capitalize()}]: {msg['content']}")
+                    
+                while True:
+                    user_question = input("\nYou: ").strip()
+                    if user_question.lower() in ['exit', 'quit', 'back']: break
+                    if not user_question: continue
+                    
+                    session_state[mem_key].append({"role": "user", "content": user_question})
+                    print("[Assistant]: \n", end="")
+                    
+                    # Call the appropriate handler, passing the chat history list for the specific key
+                    handler_func(user_question, chat_history=session_state[mem_key])
+            else:
+                continue
+
+        # ==========================================
+        # 4. EXIT
+        # ==========================================
+        elif main_mode == "4":
+            print("Exiting GTI Enterprise HR Portal. Goodbye! 👋")
+            sys.exit(0)
+            
+        else:
+            print("⚠️ Invalid choice. Please select 1, 2, 3, or 4.")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\nOperation cancelled by user. Exiting... 👋")
+        sys.exit(0)

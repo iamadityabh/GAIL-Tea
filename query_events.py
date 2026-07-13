@@ -1,5 +1,4 @@
 import json
-import streamlit as st
 import psycopg2
 from langchain_core.prompts import PromptTemplate
 from config import get_llms, get_embedder
@@ -36,63 +35,58 @@ Answer cleanly:
 
 event_chain = event_prompt | chat_llm
 
-def handle_event_query(user_question, current_mem_key):
-    status_box = st.status("🛠️ Searching Event Records...", expanded=True)
-    
-    with status_box:
-        st.write("⚡ **1. Running Vector Search on Events...**")
-        try:
-            # Connect directly for pgvector
-            conn = psycopg2.connect(dbname="GTI_2", user="postgres", password="root", host="localhost")
-            cur = conn.cursor()
+def handle_event_query(user_question, current_mem_key=None):
+    print("🛠️ Searching Event Records...")
+    print("⚡ 1. Running Vector Search on Events...")
+    try:
+        # Connect directly for pgvector
+        conn = psycopg2.connect(dbname="GTI_2", user="postgres", password="root", host="localhost")
+        cur = conn.cursor()
 
-            # Encode the user's question
-            question_vector = embedder.encode(user_question).tolist()
-            
-            # Fetch top 3 matching events based on semantic similarity
-            cur.execute("""
-                SELECT event_id, event_name, metadata 
-                FROM company_events 
-                ORDER BY embedding <=> %s::vector 
-                LIMIT 10;
-            """, (str(question_vector),))
-            
-            results = cur.fetchall()
-            event_data_list = []
-            
-            if results:
-                st.write(f"🔍 Found {len(results)} relevant events.")
-                for r in results:
-                    # r[2] contains the JSONB metadata
-                    event_data_list.append(r[2])
-                    
-                event_json_data = json.dumps(event_data_list, indent=2)
-                st.write("📄 **Event Data Passed to LLM:**")
-                st.json(event_data_list)
-            else:
-                event_json_data = "[]"
-                error_reply = "I couldn't find any relevant events matching your query."
+        # Encode the user's question
+        question_vector = embedder.encode(user_question).tolist()
+        
+        # Fetch top 3 matching events based on semantic similarity
+        cur.execute("""
+            SELECT event_id, event_name, metadata 
+            FROM company_events 
+            ORDER BY embedding <=> %s::vector 
+            LIMIT 10;
+        """, (str(question_vector),))
+        
+        results = cur.fetchall()
+        event_data_list = []
+        
+        if results:
+            print(f"🔍 Found {len(results)} relevant events.")
+            for r in results:
+                # r[2] contains the JSONB metadata
+                event_data_list.append(r[2])
                 
-        except Exception as e:
-            st.error(f"⚠️ Database error: {str(e)}")
-            error_reply = "An error occurred while searching for events."
-        finally:
-            if 'cur' in locals() and cur: cur.close()
-            if 'conn' in locals() and conn: conn.close()
+            event_json_data = json.dumps(event_data_list, indent=2)
+            print("📄 Event Data Passed to LLM.")
+        else:
+            event_json_data = "[]"
+            error_reply = "I couldn't find any relevant events matching your query."
+            
+    except Exception as e:
+        print(f"⚠️ Database error: {str(e)}")
+        error_reply = "An error occurred while searching for events."
+    finally:
+        if 'cur' in locals() and cur: cur.close()
+        if 'conn' in locals() and conn: conn.close()
 
-    status_box.update(label="✅ Event Search Complete", state="complete", expanded=False)
+    print("✅ Event Search Complete")
 
-    # FINAL ANSWER STREAMING
+    # FINAL ANSWER
     if 'error_reply' in locals() and error_reply:
-        st.markdown(error_reply)
-        st.session_state[current_mem_key].append({"role": "assistant", "content": error_reply})
+        return error_reply
     else:
-        stream = event_chain.stream({
+        final_response = event_chain.invoke({
             "question": user_question,
             "event_data": event_json_data
         })
-        full_response = st.write_stream((chunk.content for chunk in stream))
-        st.session_state[current_mem_key].append({"role": "assistant", "content": full_response})
+        return final_response.content
 
 def handle_event_query_api(user_question: str) -> str:
     try:

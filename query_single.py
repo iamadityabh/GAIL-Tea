@@ -1,5 +1,5 @@
 import json
-import streamlit as st
+import sys
 from sqlalchemy import text
 from langchain_core.prompts import PromptTemplate
 from config import get_db_engine, get_llms
@@ -39,88 +39,120 @@ Response:
 extractor_chain = extractor_prompt | extractor_llm
 synthesizer_chain = synthesizer_prompt | chat_llm
 
-def handle_single_profile(user_question, current_mem_key):
-    status_box = st.status("🛠️ Backend Terminal Logs (Click to expand)", expanded=True)
+
+def handle_single_profile(user_question, chat_history=None):
+    """
+    Replaced 'current_mem_key' with a 'chat_history' list parameter to replace st.session_state.
+    Pass a list here if you want to maintain conversation history.
+    """
+    if chat_history is None:
+        chat_history = []
+
+    print("\n🛠️ Backend Terminal Logs:")
+    print("⚡ 1. Extracting Clues...")
     
-    with status_box:
-        st.write("⚡ **1. Extracting Clues...**")
+    try:
+        clues_response = extractor_chain.invoke({"question": user_question})
+        raw_clues = json.loads(clues_response.content)
+        clues = {"name": None, "department": None, "position": None, "project_phase": None, "tech_stack": None}
+        
+        for k, v in raw_clues.items():
+            if str(k).lower() in clues: 
+                clues[str(k).lower()] = v
+                
+        bad_words = ["employees", "employee", "people", "staff", "all", "list", "everyone", "who", "what"]
+        if clues['name'] and clues['name'].lower() in bad_words: 
+            clues['name'] = None
+            
+        print("🔍 Clues found (JSON):")
+        print(json.dumps(clues, indent=2))
+        
+    except Exception as e:
+        print(f"❌ Error extracting clues: {e}")
+        return
+
+    if not any(clues.values()):
+        error_msg = "Please provide an employee name, department, or position to search."
+        print(f"⚠️ Warning: {error_msg}")
+        chat_history.append({"role": "assistant", "content": error_msg})
+        return error_msg
+        
+    sql_json_data = ""
+    rag_data = "No document info required for this query."
+    final_emp_id = None
+    error_reply = None
+
+    with engine.connect() as conn:
+        print("🗄️ 2. Searching Database...")
+        base_query = """
+            SELECT e.employee_id, e.employee_name, e.age, e.phone_no, e.position, d.department_name, j.metadata 
+            FROM employees e 
+            LEFT JOIN departments d ON e.dept_id = d.department_id
+            LEFT JOIN employee_json j ON e.employee_id = j.employee_id
+            WHERE 1=1
+        """
+        conditions, params = [], {}
+        if clues.get('name'): 
+            conditions.append("e.employee_name ILIKE :name")
+            params['name'] = f"%{clues['name']}%"
+        if clues.get('department'): 
+            conditions.append("d.department_name ILIKE :dept")
+            params['dept'] = f"%{clues['department']}%"
+        if clues.get('position'): 
+            conditions.append("e.position ILIKE :pos")
+            params['pos'] = f"%{clues['position']}%"
+        
+        if conditions: 
+            base_query += " AND " + " AND ".join(conditions)
+
         try:
-            clues_response = extractor_chain.invoke({"question": user_question})
-            raw_clues = json.loads(clues_response.content)
-            clues = {"name": None, "department": None, "position": None, "project_phase": None, "tech_stack": None}
-            for k, v in raw_clues.items():
-                if str(k).lower() in clues: clues[str(k).lower()] = v
-            bad_words = ["employees", "employee", "people", "staff", "all", "list", "everyone", "who", "what"]
-            if clues['name'] and clues['name'].lower() in bad_words: clues['name'] = None
-            st.write("🔍 **Clues found (JSON):**")
-            st.json(clues) 
+            results = conn.execute(text(base_query), params).fetchall()
+            
+            if len(results) == 0:
+                error_reply = "I couldn't find any employees matching those criteria."
+            elif len(results) > 1:
+                names = [f"{r._mapping['employee_name']}" for r in results]
+                error_reply = f"I found multiple matching employees: **{', '.join(names)}**. Please be more specific."
+            else:
+                record = dict(results[0]._mapping)
+                final_emp_id = record.pop('employee_id')
+                sql_json_data = json.dumps(record, indent=2)
+                
+                print("📄 Raw SQL JSON passed to LLM:")
+                print(sql_json_data)
+                
+                if final_emp_id:
+                    rag_query = text("SELECT document_type, chunk_text FROM employee_vectors WHERE employee_id = :emp_id")
+                    rag_result = conn.execute(rag_query, {"emp_id": final_emp_id}).fetchall()
+                    if rag_result:
+                        rag_data = "\n".join([f"[{row[0]}] {row[1]}" for row in rag_result])
+                        print(f"├── ✅ Found PDF/RAG Data ({len(rag_result)} chunks).")
+
         except Exception as e:
-            st.error(f"❌ Error extracting clues: {e}")
-            st.stop()
+            print(f"├── ⚠️ SQL Error: {e}")
+            return
 
-        if not any(clues.values()):
-            error_msg = "Please provide an employee name, department, or position to search."
-            st.warning(error_msg)
-            st.session_state[current_mem_key].append({"role": "assistant", "content": error_msg})
-            st.stop()
-            
-        sql_json_data = ""
-        rag_data = "No document info required for this query."
-        final_emp_id = None
-        error_reply = None
-
-        with engine.connect() as conn:
-            st.write("🗄️ **2. Searching Database...**")
-            base_query = """
-                SELECT e.employee_id, e.employee_name, e.age, e.phone_no, e.position, d.department_name, j.metadata 
-                FROM employees e 
-                LEFT JOIN departments d ON e.dept_id = d.department_id
-                LEFT JOIN employee_json j ON e.employee_id = j.employee_id
-                WHERE 1=1
-            """
-            conditions, params = [], {}
-            if clues.get('name'): conditions.append("e.employee_name ILIKE :name"); params['name'] = f"%{clues['name']}%"
-            if clues.get('department'): conditions.append("d.department_name ILIKE :dept"); params['dept'] = f"%{clues['department']}%"
-            if clues.get('position'): conditions.append("e.position ILIKE :pos"); params['pos'] = f"%{clues['position']}%"
-            
-            if conditions: base_query += " AND " + " AND ".join(conditions)
-
-            try:
-                results = conn.execute(text(base_query), params).fetchall()
-                if len(results) == 0:
-                    error_reply = "I couldn't find any employees matching those criteria."
-                elif len(results) > 1:
-                    names = [f"{r._mapping['employee_name']}" for r in results]
-                    error_reply = f"I found multiple matching employees: **{', '.join(names)}**. Please be more specific."
-                else:
-                    record = dict(results[0]._mapping)
-                    final_emp_id = record.pop('employee_id')
-                    sql_json_data = json.dumps(record, indent=2)
-                    st.write("📄 **Raw SQL JSON passed to LLM:**")
-                    st.json(record)
-                    
-                    if final_emp_id:
-                        rag_query = text("SELECT document_type, chunk_text FROM employee_vectors WHERE employee_id = :emp_id")
-                        rag_result = conn.execute(rag_query, {"emp_id": final_emp_id}).fetchall()
-                        if rag_result:
-                            rag_data = "\n".join([f"[{row[0]}] {row[1]}" for row in rag_result])
-                            st.write(f"├── ✅ Found PDF/RAG Data ({len(rag_result)} chunks).")
-
-            except Exception as e:
-                st.error(f"├── ⚠️ SQL Error: {e}")
-                st.stop()
-
-    status_box.update(label="✅ Backend Processing Complete", state="complete", expanded=False)
+    print("✅ Backend Processing Complete\n")
 
     if error_reply:
-        st.markdown(error_reply)
-        st.session_state[current_mem_key].append({"role": "assistant", "content": error_reply})
+        print(error_reply)
+        chat_history.append({"role": "assistant", "content": error_reply})
+        return error_reply
     else:
         stream = synthesizer_chain.stream({"question": user_question, "sql_json_data": sql_json_data, "rag_data": rag_data})
-        full_response = st.write_stream((chunk.content for chunk in stream))
-        st.session_state[current_mem_key].append({"role": "assistant", "content": full_response})
+        
+        # Simulating st.write_stream to standard output
+        full_response = ""
+        for chunk in stream:
+            sys.stdout.write(chunk.content)
+            sys.stdout.flush()
+            full_response += chunk.content
+            
+        print() # Add a final newline after the stream ends
+        chat_history.append({"role": "assistant", "content": full_response})
+        return full_response
 
-# query_single.py ke end mein ye function append kar dena:
+
 def handle_single_profile_api(user_question: str) -> str:
     # 1. Exact purani logic se raw variables parse karo
     clues_response = extractor_chain.invoke({"question": user_question})
@@ -128,7 +160,8 @@ def handle_single_profile_api(user_question: str) -> str:
     
     clues = {"name": None, "department": None, "position": None, "project_phase": None, "tech_stack": None}
     for k, v in raw_clues.items():
-        if str(k).lower() in clues: clues[str(k).lower()] = v
+        if str(k).lower() in clues: 
+            clues[str(k).lower()] = v
         
     if not any(clues.values()):
         return "Please provide an employee name, department, or position to search."
@@ -143,11 +176,19 @@ def handle_single_profile_api(user_question: str) -> str:
             WHERE 1=1
         """
         conditions, params = [], {}
-        if clues.get('name'): conditions.append("e.employee_name ILIKE :name"); params['name'] = f"%{clues['name']}%"
-        if clues.get('department'): conditions.append("d.department_name ILIKE :dept"); params['dept'] = f"%{clues['department']}%"
-        if clues.get('position'): conditions.append("e.position ILIKE :pos"); params['pos'] = f"%{clues['position']}%"
+        if clues.get('name'): 
+            conditions.append("e.employee_name ILIKE :name")
+            params['name'] = f"%{clues['name']}%"
+        if clues.get('department'): 
+            conditions.append("d.department_name ILIKE :dept")
+            params['dept'] = f"%{clues['department']}%"
+        if clues.get('position'): 
+            conditions.append("e.position ILIKE :pos")
+            params['pos'] = f"%{clues['position']}%"
         
-        if conditions: base_query += " AND " + " AND ".join(conditions)
+        if conditions: 
+            base_query += " AND " + " AND ".join(conditions)
+            
         results = conn.execute(text(base_query), params).fetchall()
         
         if len(results) == 0:
@@ -168,5 +209,10 @@ def handle_single_profile_api(user_question: str) -> str:
                 rag_data = "\n".join([f"[{row[0]}] {row[1]}" for row in rag_result])
 
     # 3. End mein stream karne ke bajay directly invoke karke pure text block return karo
-    final_response = synthesizer_chain.invoke({"question": user_question, "sql_json_data": sql_json_data, "rag_data": rag_data})
+    final_response = synthesizer_chain.invoke({
+        "question": user_question, 
+        "sql_json_data": sql_json_data, 
+        "rag_data": rag_data
+    })
+    
     return final_response.content
