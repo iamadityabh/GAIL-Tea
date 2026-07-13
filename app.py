@@ -167,7 +167,7 @@ def main():
                     print("[Assistant]: \n", end="")
                     
                     # Call the appropriate handler, passing the chat history list for the specific key
-                    handler_func(user_question, chat_history=session_state[mem_key])
+                    handler_func(user_question, session_state[mem_key])
             else:
                 continue
 
