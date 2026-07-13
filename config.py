@@ -25,7 +25,7 @@ def get_db_engine():
 # Cache Embedder using standard Python caching
 @lru_cache(maxsize=1)
 def get_embedder():
-    return SentenceTransformer('multi-qa-distilbert-cos-v1')
+    return SentenceTransformer('all-MiniLM-L6-v2')
 
 # Load LLMs
 def get_llms():
