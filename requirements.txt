@@ -10,11 +10,10 @@ langchain-ollama
 streamlit
 langchain-groq
 torchvision
-dotenv
+python-dotenv
 fastapi 
 uvicorn 
 pydantic 
-fastapi-cors
-pdfplumber
+pdfplumber 
 pytesseract 
 pdf2image
