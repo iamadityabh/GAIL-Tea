@@ -13,23 +13,20 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 4. Set the working directory inside 
+# 4. Set the working directory inside the container
 WORKDIR /app
 
 # 5. Copy requirements file
 COPY requirements.txt .
 
-# 6. Install PyTorch CPU version first (Crucial for Render Free Tier to save RAM & Build Time)
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# 6. ULTIMATE FIX: Install everything in one go, but FORCE pip to use the CPU server for PyTorch
+RUN pip install --no-cache-dir -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
-# 7. Install the rest of the Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 8. Copy the rest of your backend project files
+# 7. Copy the rest of your backend project files
 COPY . .
 
-# 9. Expose the port (Render uses port 10000 internally)
+# 8. Expose the port
 EXPOSE 10000
 
-# 10. Start the FastAPI server using Uvicorn
+# 9. Start the FastAPI server using Uvicorn
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "10000"]
