@@ -9,7 +9,7 @@ import {
   Wand2,
 } from "lucide-react";
 
-import gailEmblem from "@/assets/gail-emblem.jpg.asset.json";
+import gailEmblem from "@/assets/gail-emblem.jpg";
 
 import {
   Sidebar,
@@ -56,7 +56,7 @@ export function AppSidebar() {
         <Link to="/" className="flex items-center gap-3">
           <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-molten/10 p-1 ring-1 ring-molten/30 shadow-[var(--shadow-glow)]">
             <img
-              src={gailEmblem.url}
+              src={gailEmblem}
               alt="GAIL logo"
               className="h-full w-full object-contain"
             />
