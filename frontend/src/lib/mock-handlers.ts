@@ -1,4 +1,4 @@
-const BASE_URL = "http://127.0.0.1:8000";
+const BASE_URL = "https://gail-tea.onrender.com";
 
 // ==========================================
 // 1. QUERY HANDLERS (Returning { markdown: "..." } format)
