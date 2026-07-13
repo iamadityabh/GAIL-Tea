@@ -1,0 +1,11 @@
+The trainee, Harsh Choudhary, is undergoing industrial training at the GAIL Training Institute, Noida, and is working on a project titled “Industrial Operations Data Analytics and Performance Dashboard” under the supervision of mentor Ms. Shalini Gupta, Manager (Business Analytics).
+
+The project aims to collect, process, analyze, and visualize operational datasets to support data-driven decision-making. The system focuses on transforming raw organizational data into interactive dashboards, reports, performance indicators, and analytical insights.
+
+The project follows five phases: Business Requirement Analysis, Data Collection and Cleaning, Analytics and Dashboard Development, Testing and User Feedback, and Deployment and Performance Monitoring. The trainee is currently working in the third phase, Analytics and Dashboard Development.
+
+Completed activities include identifying analytical requirements, collecting sample datasets, cleaning and transforming raw data, defining key performance indicators, and designing initial dashboard layouts. Harsh is currently responsible for Python-based data processing, Pandas data analysis, Excel reporting, Power BI dashboard development, database operations, visualization design, and maintaining project documentation.
+
+The technologies used include Python, Pandas, Excel, Power BI, DBMS technologies, Git, and GitHub. The project’s major strengths include centralized data visualization, improved performance monitoring, simplified report generation, and support for data-driven decision-making. Current limitations include inconsistent source data, manual data updates, dependency on data quality, and limited real-time analytics.
+
+Future plans include automated data pipelines, machine learning-based forecasting, anomaly detection, real-time dashboard updates, and integration with additional organizational data sources. Through the project, the trainee is gaining practical experience in data analytics, business intelligence, Python, data visualization, dashboard development, database systems, software development practices, and industrial data management.

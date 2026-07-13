@@ -1,0 +1,6 @@
+Name: Harsh Choudhary
+Age: 23
+Department Id: 4
+Phone no.: +91-9319424747
+Position: Intern
+Email: [harshc2855@gmail.com](mailto:harshc2855@gmail.com)

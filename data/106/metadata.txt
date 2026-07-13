@@ -1,0 +1,9 @@
+The trainee, Vikram Nair, is undergoing industrial training at the GAIL Training Institute, Noida, and is working on a project titled “Centralized Training Task Management Portal” under the supervision of mentor Mr. Amit Sinha, Manager (Information Technology). The project aims to provide a centralized web platform for managing trainee assignments, project tasks, deadlines, progress reports, and mentor reviews.
+
+The project consists of five phases: Requirement Analysis, Application Architecture Design, Full-Stack Development, System Testing, and Deployment. The trainee is currently working in the third phase, Full-Stack Development.
+
+Vikram’s responsibilities include developing REST APIs, designing backend services, integrating MongoDB databases, implementing frontend components, containerizing application modules using Docker, and maintaining the Git repository. The system uses Node.js, React, MongoDB, Docker, C++, Git, and REST APIs.
+
+The major strengths of the project include centralized trainee management, improved progress visibility, simplified task assignment, and digital maintenance of project records. Current limitations include dependency on manual data updates, limited notification capabilities, and the need for stronger authentication mechanisms.
+
+Future plans include adding automated reminders, analytical dashboards, role-based access control, and integration with organizational authentication systems. The trainee is gaining practical experience in full-stack development, database management, Docker, API development, software architecture, and deployment planning.

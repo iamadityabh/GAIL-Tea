@@ -1,9 +1,16 @@
 import json
 import psycopg2
-from sentence_transformers import SentenceTransformer
-import PyPDF2
 from pathlib import Path
 from langchain_core.prompts import PromptTemplate
+
+# --- OCR & TABLES IMPORTS ---
+import pdfplumber
+import pytesseract
+from pdf2image import convert_from_path
+
+# --- IMPORT MODELS FROM CONFIG ---
+# Yeh line aapki config.py se embedder aur Groq LLM ko load karegi
+from config import get_embedder, get_llms 
 
 # ==========================================
 # 1. Configurations
@@ -98,46 +105,66 @@ TEXT PROVIDED:
 """)
 
 # ==========================================
-# 3. Model Loader (Lazy Loading)
+# 3. Model Loader (UPGRADED FOR GROQ)
 # ==========================================
 def get_models():
-    print("Loading Models... (Embedder & Ollama)")
-    embedder = SentenceTransformer('all-mpnet-base-v2')
+    print("Loading Models from config.py... (Embedder & Groq API)")
     
-    from langchain_ollama import ChatOllama
-    llm = ChatOllama(model="llama3", format="json", temperature=0)
+    # config.py se embedder aur LLMs get karna
+    embedder = get_embedder()
+    extractor_llm, chat_llm = get_llms() 
     
-    info_chain = info_prompt | llm
-    metadata_chain = metadata_prompt | llm
-    event_chain = event_prompt | llm
+    # Hum sirf extractor_llm (json_object format wala) use karenge ingestion ke liye
+    info_chain = info_prompt | extractor_llm
+    metadata_chain = metadata_prompt | extractor_llm
+    event_chain = event_prompt | extractor_llm
     
     return embedder, info_chain, metadata_chain, event_chain
 
 # ==========================================
-# 4. Helper Functions
+# 4. Helper Functions (OCR & PDF)
 # ==========================================
 def extract_text_from_pdf(file_path):
     text = ""
     try:
-        with open(file_path, 'rb') as file:
-            reader = PyPDF2.PdfReader(file)
-            for page in reader.pages:
-                extracted = page.extract_text()
-                if extracted:
-                    text += extracted + "\n"
+        # Step 1: Try digital extraction with pdfplumber
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+                
+                tables = page.extract_tables()
+                for table in tables:
+                    text += "\n[TABLE START]\n"
+                    for row in table:
+                        clean_row = [str(cell).replace('\n', ' ') if cell else "" for cell in row]
+                        text += " | ".join(clean_row) + "\n"
+                    text += "[TABLE END]\n\n"
+
+        # Step 2: OCR Fallback for Scanned Documents
+        if len(text.strip()) < 10:
+            print(f" ├── ⚠️ No digital text detected in {Path(file_path).name}. Running OCR...")
+            images = convert_from_path(file_path)
+            for img in images:
+                ocr_text = pytesseract.image_to_string(img)
+                text += ocr_text + "\n"
+
     except Exception as e:
         print(f"⚠️ Warning: Could not read {file_path}. Error: {e}")
+        
     return text.strip()
 
 def parse_with_llm(raw_text, chain, name_label):
     if not raw_text.strip():
         return {}
     try:
-        print(f"   -> LLM is parsing {name_label}...")
+        print(f"   -> Groq API is parsing {name_label}...")
         response = chain.invoke({"raw_text": raw_text})
+        # Groq with JSON mode returns stringified JSON, just load it
         return json.loads(response.content)
     except Exception as e:
-        print(f"⚠️ LLM parsing failed for {name_label}: {e}")
+        print(f"⚠️ Groq API parsing failed for {name_label}: {e}")
         return {}
 
 def extract_text_from_folder(folder_path: Path):
@@ -154,7 +181,7 @@ def extract_text_from_folder(folder_path: Path):
     return combined_text
 
 # ==========================================
-# 5. CORE FUNCTIONS (Called by app.py)
+# 5. CORE FUNCTIONS
 # ==========================================
 
 # ---------------- EMPLOYEES ----------------
@@ -163,11 +190,8 @@ def ingest_single_employee(folder_name: str) -> dict:
     info_path = folder_path / "info.txt"
     metadata_path = folder_path / "metadata.txt"
 
-    # VALIDATION 1: Check if folder exists
     if not folder_path.exists() or not folder_path.is_dir():
         return {"status": "error", "message": f"Folder 'data/{folder_name}' does not exist."}
-
-    # VALIDATION 2: Check if info.txt exists
     if not info_path.exists():
         return {"status": "error", "message": f"info.txt is missing in folder '{folder_name}'."}
 
@@ -178,7 +202,6 @@ def ingest_single_employee(folder_name: str) -> dict:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
 
-        # 🔥 VALIDATION 3: Duplicate Check in DB (Strict Check)
         cur.execute("SELECT 1 FROM employees WHERE employee_id = %s;", (folder_name,))
         if cur.fetchone():
             return {"status": "error", "message": f"Employee ID '{folder_name}' already exists! Please use the 'Update Data' section to modify it."}
@@ -187,7 +210,6 @@ def ingest_single_employee(folder_name: str) -> dict:
 
         embedder, info_chain, metadata_chain, _ = get_models()
 
-        # --- PHASE 1: Process info.txt (Static Data) ---
         with open(info_path, 'r', encoding='utf-8') as f:
             basic_data = parse_with_llm(f.read(), info_chain, "info.txt")
         emp_name = basic_data.get('name')
@@ -208,7 +230,6 @@ def ingest_single_employee(folder_name: str) -> dict:
         ))
         print(f" ├── SQL: Inserted basic info for {emp_name} ({folder_name})")
 
-        # --- PHASE 2: Process metadata.txt (Dynamic Data) ---
         dynamic_data = {}
         if metadata_path.exists():
             with open(metadata_path, 'r', encoding='utf-8') as f:
@@ -221,9 +242,6 @@ def ingest_single_employee(folder_name: str) -> dict:
         else:
             print(" ├── ⚠️ metadata.txt not found. Setting dynamic metadata to empty.")
 
-        # ========================================================
-        # 🔥 UNIFIED VECTOR EMBEDDING (SQL + JSON)
-        # ========================================================
         unified_profile = {
             "employee_id": folder_name,
             "employee_name": emp_name,
@@ -244,7 +262,6 @@ def ingest_single_employee(folder_name: str) -> dict:
         """, (folder_name, unified_string, unified_vector))
         print(" ├── SQL: Unified Metadata and Vectors saved successfully!")
 
-        # --- PHASE 3: Process PDFs (Embeddings) ---
         pdf_files = list(folder_path.glob("*.pdf"))
         if not pdf_files:
             print(" ├── ⚠️ No PDF documents found.")
@@ -302,13 +319,10 @@ def delete_employee(folder_name: str) -> dict:
         if cur: cur.close()
         if conn: conn.close()
 
-
-# ---------------- EVENTS ----------------
 # ---------------- EVENTS ----------------
 def ingest_single_event(event_id: str) -> dict:
     folder_path = Path("events") / event_id
     
-    # VALIDATION 1: Check if folder exists
     if not folder_path.exists() or not folder_path.is_dir():
         return {"status": "error", "message": f"Folder 'events/{event_id}' not found."}
         
@@ -318,7 +332,6 @@ def ingest_single_event(event_id: str) -> dict:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
 
-        # 🔥 VALIDATION 2: Duplicate Check for Events (Strict Check)
         cur.execute("SELECT 1 FROM company_events WHERE event_id = %s;", (event_id,))
         if cur.fetchone():
             return {"status": "error", "message": f"Event ID '{event_id}' already exists! Please use the 'Update Data' section to modify it."}
@@ -329,10 +342,8 @@ def ingest_single_event(event_id: str) -> dict:
 
         print(f"\n📅 Processing Event Folder: {event_id}")
         
-        # Load Models
         embedder, _, _, event_chain = get_models()
 
-        # Extract data using LLM
         event_json = parse_with_llm(raw_text, event_chain, f"Event Documents ({event_id})")
         event_name = event_json.get("event_name", f"Event {event_id}")
 
@@ -340,7 +351,6 @@ def ingest_single_event(event_id: str) -> dict:
         print("   ├── Creating Vector Embedding for Event...")
         embedding_vector = embedder.encode(json_string).tolist()
 
-        # 🔥 INSERT WITH ALL NEW HYBRID COLUMNS
         cur.execute("""
             INSERT INTO company_events (event_id, event_name, event_date, location, description, metadata, embedding) 
             VALUES (%s, %s, %s, %s, %s, %s, %s);
@@ -392,7 +402,7 @@ def delete_event(event_id: str) -> dict:
 # 6. Testing Block (Terminal Run)
 # ==========================================
 if __name__ == "__main__":
-    print("\n🛠️ Database Manager")
+    print("\n🛠️ Database Manager (Using Groq API)")
     print("1. Ingest (Add) New Employee")
     print("2. Delete Existing Employee")
     print("3. Ingest (Add) New Event")

@@ -1,0 +1,6 @@
+Name: Priya Verma
+Age: 24
+Department Id: 3
+Phone no.: +91 98222 33445
+Position: Intern
+Email: [priya.verma@example.com](mailto:priya.verma@example.com)

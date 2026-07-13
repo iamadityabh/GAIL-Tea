@@ -1,0 +1,6 @@
+Name: Vikram Nair
+Age: 22
+Department Id: 3
+Phone no.: +91 98722 33445
+Position: Intern
+Email: [vikram.nair@example.com](mailto:vikram.nair@example.com)

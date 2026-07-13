@@ -1,0 +1,6 @@
+Name: Ananya Rao
+Age: 21
+Department Id: 2
+Phone no.: +91 98611 22334
+Position: Intern
+Email: [ananya.rao@example.com](mailto:ananya.rao@example.com)

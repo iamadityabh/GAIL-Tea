@@ -1,0 +1,6 @@
+Name: Ashmi Verma
+Age: 20
+Department Id: 2
+Phone no.: +91 98714 12181
+Position: Intern
+Email: [ashmiverma925@gmail.com](mailto:ashmiverma925@gmail.com)

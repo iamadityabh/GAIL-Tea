@@ -1,0 +1,6 @@
+Name: Sneha Kapoor
+Age: 21
+Department Id: 2
+Phone no.: +91 98444 55667
+Position: Intern
+Email: [sneha.kapoor@example.com](mailto:sneha.kapoor@example.com)
