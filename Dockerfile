@@ -19,21 +19,18 @@ WORKDIR /app
 # 5. Copy requirements file
 COPY requirements.txt .
 
-# 6. Install PyTorch CPU version explicitly FIRST
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# 6. Install EVERYTHING (Forcing CPU version where possible)
+RUN pip install --no-cache-dir -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
-# 7. ULTIMATE FIX: Remove any mention of 'torch' from the copied requirements.txt inside Docker 
-# so pip doesn't try to "upgrade" or overwrite our perfect CPU installation.
-RUN grep -v "torch" requirements.txt > temp.txt && mv temp.txt requirements.txt
+# 7. 🚨 THE MASTER STROKE: Uninstall the problematic audio and vision libraries 🚨
+# sentence-transformers only needs 'torch'. Removing torchaudio completely prevents the C++ crash.
+RUN pip uninstall -y torchvision torchaudio
 
-# 8. Install the rest of the packages normally
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 9. Copy the rest of your backend project files
+# 8. Copy the rest of your backend project files
 COPY . .
 
-# 10. Expose the port
+# 9. Expose the port
 EXPOSE 10000
 
-# 11. Start the FastAPI server using Uvicorn
+# 10. Start the FastAPI server using Uvicorn
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "10000"]
