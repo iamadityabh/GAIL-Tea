@@ -35,7 +35,7 @@ def handle_overall_query(user_question, current_mem_key=None):
     print("🛠️ Fetching Team & Department Data...")
     print("⚡ 1. Running Vector Search & Fetching Cached Departments...")
     try:
-        conn = psycopg2.connect(dbname="GTI_2", user="postgres", password="root", host="localhost")
+        conn = psycopg2.connect(os.getenv("DATABASE_URL"))
         cur = conn.cursor()
         
         # 🔥 FETCH DIRECTLY FROM CACHE (Super Fast!)
