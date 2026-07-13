@@ -19,7 +19,7 @@ if not os.getenv("DATABASE_URL"):
 # Cache DB Engine
 @st.cache_resource
 def get_db_engine():
-    DATABASE_URL = os.getenv(DATABASE_URL);
+    DATABASE_URL = os.getenv("DATABASE_URL");
     return create_engine(DATABASE_URL, pool_pre_ping=True)
 
 # Cache Embedder
