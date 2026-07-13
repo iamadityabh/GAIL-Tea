@@ -52,7 +52,7 @@ def handle_event_query(user_question, current_mem_key=None):
             SELECT event_id, event_name, metadata 
             FROM company_events 
             ORDER BY embedding <=> %s::vector 
-            LIMIT 10;
+            LIMIT 150;
         """, (str(question_vector),))
         
         results = cur.fetchall()
@@ -100,7 +100,7 @@ def handle_event_query_api(user_question: str) -> str:
             SELECT event_id, event_name, metadata 
             FROM company_events 
             ORDER BY embedding <=> %s::vector 
-            LIMIT 10;
+            LIMIT 150;
         """, (str(question_vector),))
         
         results = cur.fetchall()

@@ -50,7 +50,7 @@ def handle_overall_query(user_question, current_mem_key=None):
             SELECT employee_id, metadata_text 
             FROM metadata_vectors 
             ORDER BY embedding <=> %s::vector 
-            LIMIT 10;
+            LIMIT 150;
         """, (str(question_vector),))
         
         dynamic_results = cur.fetchall()
@@ -106,7 +106,7 @@ def handle_overall_query_api(user_question: str) -> str:
             SELECT employee_id, metadata_text 
             FROM metadata_vectors 
             ORDER BY embedding <=> %s::vector 
-            LIMIT 10;
+            LIMIT 150;
         """, (str(question_vector),))
         
         dynamic_results = cur.fetchall()
