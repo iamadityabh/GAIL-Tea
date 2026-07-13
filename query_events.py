@@ -43,7 +43,7 @@ def handle_event_query(user_question, current_mem_key):
         st.write("⚡ **1. Running Vector Search on Events...**")
         try:
             # Connect directly for pgvector
-            conn = psycopg2.connect(dbname="GTI_2", user="postgres", password="root", host="localhost")
+            conn = psycopg2.connect(os.getenv("DATABASE_URL"))
             cur = conn.cursor()
 
             # Encode the user's question
@@ -54,7 +54,7 @@ def handle_event_query(user_question, current_mem_key):
                 SELECT event_id, event_name, metadata 
                 FROM company_events 
                 ORDER BY embedding <=> %s::vector 
-                LIMIT 10;
+                LIMIT 150;
             """, (str(question_vector),))
             
             results = cur.fetchall()

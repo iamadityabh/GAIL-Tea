@@ -37,7 +37,7 @@ def handle_overall_query(user_question, current_mem_key):
     with status_box:
         st.write("⚡ **1. Running Vector Search & Fetching Cached Departments...**")
         try:
-            conn = psycopg2.connect(dbname="GTI_2", user="postgres", password="root", host="localhost")
+            conn = psycopg2.connect(os.getenv("DATABASE_URL"))
             cur = conn.cursor()
             
             # 🔥 FETCH DIRECTLY FROM CACHE (Super Fast!)
@@ -52,7 +52,7 @@ def handle_overall_query(user_question, current_mem_key):
                 SELECT employee_id, metadata_text 
                 FROM metadata_vectors 
                 ORDER BY embedding <=> %s::vector 
-                LIMIT 10;
+                LIMIT 150;
             """, (str(question_vector),))
             
             dynamic_results = cur.fetchall()
