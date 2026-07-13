@@ -1,22 +1,18 @@
 import json
-import psycopg2
-from sentence_transformers import SentenceTransformer
-import PyPDF2
 from pathlib import Path
 from langchain_core.prompts import PromptTemplate
 
-# ==========================================
-# 1. Configurations
-# ==========================================
-DB_CONFIG = {
-    "dbname": "GTI_2",
-    "user": "postgres",
-    "password": "root",  # Apna actual password yahan check kar lena
-    "host": "localhost"
-}
+# --- OCR & TABLES IMPORTS ---
+import pdfplumber
+import pytesseract
+from pdf2image import convert_from_path
+
+# --- IMPORT MODELS & DB FROM CONFIG ---
+# Ab sab kuch config se aayega (No hardcoded DB credentials)
+from config import get_embedder, get_llms, get_db_engine
 
 # ==========================================
-# 2. LLM Prompts Setup
+# 1. LLM Prompts Setup
 # ==========================================
 info_prompt = PromptTemplate.from_template("""
 You are a strict data extractor. Extract the details from the raw text below and return ONLY a JSON object.
@@ -98,46 +94,63 @@ TEXT PROVIDED:
 """)
 
 # ==========================================
-# 3. Model Loader (Lazy Loading)
+# 2. Model Loader (Upgraded to config.py)
 # ==========================================
 def get_models():
-    print("Loading Models... (Embedder & Ollama)")
-    embedder = SentenceTransformer('all-mpnet-base-v2')
+    print("Loading Models from config.py... (Embedder & Groq API)")
     
-    from langchain_ollama import ChatOllama
-    llm = ChatOllama(model="llama3", format="json", temperature=0)
+    embedder = get_embedder()
+    extractor_llm, chat_llm = get_llms() 
     
-    info_chain = info_prompt | llm
-    metadata_chain = metadata_prompt | llm
-    event_chain = event_prompt | llm
+    info_chain = info_prompt | extractor_llm
+    metadata_chain = metadata_prompt | extractor_llm
+    event_chain = event_prompt | extractor_llm
     
     return embedder, info_chain, metadata_chain, event_chain
 
 # ==========================================
-# 4. Helper Functions
+# 3. Helper Functions (Upgraded for OCR & Tables)
 # ==========================================
 def extract_text_from_pdf(file_path):
     text = ""
     try:
-        with open(file_path, 'rb') as file:
-            reader = PyPDF2.PdfReader(file)
-            for page in reader.pages:
-                extracted = page.extract_text()
-                if extracted:
-                    text += extracted + "\n"
+        # Step 1: Try digital extraction with pdfplumber
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+                
+                tables = page.extract_tables()
+                for table in tables:
+                    text += "\n[TABLE START]\n"
+                    for row in table:
+                        clean_row = [str(cell).replace('\n', ' ') if cell else "" for cell in row]
+                        text += " | ".join(clean_row) + "\n"
+                    text += "[TABLE END]\n\n"
+
+        # Step 2: OCR Fallback for Scanned Documents
+        if len(text.strip()) < 10:
+            print(f" ├── ⚠️ No digital text detected in {Path(file_path).name}. Running OCR...")
+            images = convert_from_path(file_path)
+            for img in images:
+                ocr_text = pytesseract.image_to_string(img)
+                text += ocr_text + "\n"
+
     except Exception as e:
         print(f"⚠️ Warning: Could not read {file_path}. Error: {e}")
+        
     return text.strip()
 
 def parse_with_llm(raw_text, chain, name_label):
     if not raw_text.strip():
         return {}
     try:
-        print(f"   -> LLM is parsing {name_label}...")
+        print(f"   -> Groq API is parsing {name_label}...")
         response = chain.invoke({"raw_text": raw_text})
         return json.loads(response.content)
     except Exception as e:
-        print(f"⚠️ LLM parsing failed for {name_label}: {e}")
+        print(f"⚠️ Groq API parsing failed for {name_label}: {e}")
         return {}
 
 def extract_text_from_folder(folder_path: Path):
@@ -154,7 +167,7 @@ def extract_text_from_folder(folder_path: Path):
     return combined_text
 
 # ==========================================
-# 5. CORE FUNCTIONS (Called by app.py)
+# 4. CORE FUNCTIONS (Called by app.py)
 # ==========================================
 
 # ---------------- EMPLOYEES ----------------
@@ -175,7 +188,8 @@ def ingest_single_employee(folder_name: str) -> dict:
     cur = None
     
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        engine = get_db_engine()
+        conn = engine.raw_connection()
         cur = conn.cursor()
 
         # 🔥 VALIDATION 3: Duplicate Check in DB (Strict Check)
@@ -282,7 +296,8 @@ def delete_employee(folder_name: str) -> dict:
     conn = None
     cur = None
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        engine = get_db_engine()
+        conn = engine.raw_connection()
         cur = conn.cursor()
 
         cur.execute("SELECT employee_name FROM employees WHERE employee_id = %s;", (folder_name,))
@@ -304,7 +319,6 @@ def delete_employee(folder_name: str) -> dict:
 
 
 # ---------------- EVENTS ----------------
-# ---------------- EVENTS ----------------
 def ingest_single_event(event_id: str) -> dict:
     folder_path = Path("events") / event_id
     
@@ -315,7 +329,8 @@ def ingest_single_event(event_id: str) -> dict:
     conn = None
     cur = None
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        engine = get_db_engine()
+        conn = engine.raw_connection()
         cur = conn.cursor()
 
         # 🔥 VALIDATION 2: Duplicate Check for Events (Strict Check)
@@ -371,7 +386,8 @@ def delete_event(event_id: str) -> dict:
     conn = None
     cur = None
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        engine = get_db_engine()
+        conn = engine.raw_connection()
         cur = conn.cursor()
         
         cur.execute("SELECT event_name FROM company_events WHERE event_id = %s;", (event_id,))
@@ -389,10 +405,10 @@ def delete_event(event_id: str) -> dict:
         if conn: conn.close()
 
 # ==========================================
-# 6. Testing Block (Terminal Run)
+# 5. Testing Block (Terminal Run)
 # ==========================================
 if __name__ == "__main__":
-    print("\n🛠️ Database Manager")
+    print("\n🛠️ Database Manager (Using Groq API)")
     print("1. Ingest (Add) New Employee")
     print("2. Delete Existing Employee")
     print("3. Ingest (Add) New Event")
