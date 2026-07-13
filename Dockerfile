@@ -19,14 +19,21 @@ WORKDIR /app
 # 5. Copy requirements file
 COPY requirements.txt .
 
-# 6. ULTIMATE FIX: Install everything in one go, but FORCE pip to use the CPU server for PyTorch
-RUN pip install --no-cache-dir -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+# 6. Install PyTorch CPU version explicitly FIRST
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
-# 7. Copy the rest of your backend project files
+# 7. ULTIMATE FIX: Remove any mention of 'torch' from the copied requirements.txt inside Docker 
+# so pip doesn't try to "upgrade" or overwrite our perfect CPU installation.
+RUN grep -v "torch" requirements.txt > temp.txt && mv temp.txt requirements.txt
+
+# 8. Install the rest of the packages normally
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 9. Copy the rest of your backend project files
 COPY . .
 
-# 8. Expose the port
+# 10. Expose the port
 EXPOSE 10000
 
-# 9. Start the FastAPI server using Uvicorn
+# 11. Start the FastAPI server using Uvicorn
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "10000"]
