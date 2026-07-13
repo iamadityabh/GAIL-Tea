@@ -117,20 +117,28 @@ async def api_add_department(req: DeptRequest):
     if not req.dept_id or not req.dept_name:
         raise HTTPException(status_code=400, detail="Missing Department ID or Name")
     try:
-        with engine.connect() as conn:
+        # 🔥 'begin()' use karo taaki manual commit na karna pade aur transaction safe rahe
+        with engine.begin() as conn: 
             conn.execute(
                 text("""
                     INSERT INTO departments (department_id, department_name, head_name, landline_ext) 
                     VALUES (:id, :name, :head, :landline)
                 """), 
-                {"id": req.dept_id, "name": req.dept_name, "head": req.head_name, "landline": req.landline_ext}
+                {
+                    "id": req.dept_id, 
+                    "name": req.dept_name, 
+                    # 🔥 THE FIX: Agar empty string aayi, toh automatically "N/A" save kar do
+                    "head": req.head_name if req.head_name else "N/A", 
+                    "landline": req.landline_ext if req.landline_ext else "N/A"
+                }
             )
-            conn.commit()
+        # Cache refresh function ko transaction ke bahar run karna better hai
         refresh_departments_cache(engine)
         return {"status": "success", "message": f"Department '{req.dept_name}' added and cache synced!"}
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 @app.post("/api/manage/department/delete")
 async def api_delete_department(req: DeptRequest):
     try:
