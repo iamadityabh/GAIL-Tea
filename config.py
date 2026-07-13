@@ -25,7 +25,7 @@ def get_db_engine():
 # Cache Embedder using standard Python caching
 @lru_cache(maxsize=1)
 def get_embedder():
-    return SentenceTransformer('all-MiniLM-L6-v2')
+    return SentenceTransformer('all-mpnet-base-v2')
 
 # Load LLMs
 def get_llms():
