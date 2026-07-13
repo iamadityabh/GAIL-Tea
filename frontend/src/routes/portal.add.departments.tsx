@@ -28,7 +28,8 @@ function DepartmentsForm() {
 
   async function add() {
     setBusy("add");
-    const res = await addDepartment(id.trim(), name.trim());
+    // 🔥 THE FIX: Charo variables pass kar diye head aur landline ke sath
+    const res = await addDepartment(id.trim(), name.trim(), head.trim(), landline.trim());
     setBusy(null);
     res.status === "success" ? toast.success(res.message) : toast.error(res.message);
   }
