@@ -1,0 +1,9 @@
+The trainee, Rohan Gupta, is undergoing industrial training at the GAIL Training Institute, Noida, and is working on a project titled “Smart Energy Consumption Monitoring and Analysis System” under the supervision of mentor Mr. Sanjay Verma, Senior Engineer (Electrical and Instrumentation). The project aims to monitor energy consumption data, identify abnormal usage patterns, and improve energy management.
+
+The project consists of five phases: Requirement Analysis, Hardware and Data Architecture Design, Monitoring System Development, Testing and Data Analysis, and Pilot Deployment. The trainee is currently working in the fourth phase, Testing and Data Analysis.
+
+Completed activities include designing the monitoring architecture, configuring IoT devices, developing Python data processing scripts, and establishing communication between monitoring devices and the central system. Current responsibilities include analyzing energy data, testing system reliability, evaluating abnormal consumption patterns, resolving integration issues, and documenting test results.
+
+The project uses Python, MATLAB, Embedded C, IoT technologies, and Linux. Major strengths include real-time energy visibility, improved resource monitoring, abnormal usage detection, and data-driven decision support. Limitations include sensor inaccuracies, communication failures, hardware dependency, and limited historical data.
+
+Future plans include implementing machine learning-based energy forecasting, predictive alerts, and advanced analytical dashboards. Through the project, the trainee is gaining experience in IoT, industrial energy systems, Python, MATLAB, data analysis, system testing, and industrial automation.

@@ -1,0 +1,9 @@
+The trainee, Sneha Kapoor, is undergoing industrial training at the GAIL Training Institute, Noida, and is working on a project titled “AI-Based Technical Document Summarization Platform” under the supervision of mentor Ms. Ritu Arora, Deputy Manager (IT). The project aims to automatically summarize lengthy organizational and technical documents and provide employees with concise, relevant information.
+
+The project follows five phases: Requirement Analysis, Dataset Preparation, NLP Model Development, Application Integration and Testing, and Deployment. The trainee is currently working in the third phase, NLP Model Development.
+
+Sneha’s responsibilities include preparing textual datasets, developing document processing pipelines, experimenting with NLP models, generating document embeddings, evaluating summaries, and integrating AI modules with a Flask backend.
+
+The technologies used include Python, TensorFlow, NLP, Flask, MongoDB, vector embeddings, and Large Language Models. The project’s strengths include reduced document reading time, faster information discovery, automated processing, and support for large document collections. Limitations include possible loss of important information during summarization, model hallucinations, and dependency on document quality.
+
+Future development includes adding semantic document search, Retrieval-Augmented Generation, multilingual summarization, and personalized summaries. The trainee is gaining experience in NLP, AI model development, backend integration, data processing, model evaluation, and enterprise document management.

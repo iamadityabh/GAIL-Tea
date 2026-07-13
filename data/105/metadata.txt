@@ -1,0 +1,9 @@
+The trainee, Meera Iyer, is currently undergoing industrial training at the GAIL Training Institute, Noida, and is working on a project titled “Intelligent Document Classification and Retrieval System” under the supervision of mentor Dr. Kavita Menon, Senior Manager (Information Systems). The project aims to use Artificial Intelligence and Natural Language Processing to automatically classify organizational documents and improve information retrieval.
+
+The project follows six phases consisting of Data Collection, Data Preprocessing, AI Model Design, Model Training and Integration, Testing and Accuracy Evaluation, and Deployment. The trainee is currently working in the fourth phase, Model Training and Integration.
+
+Completed work includes collecting sample organizational documents, preparing training datasets, cleaning textual information, designing document categories, and evaluating suitable NLP models. Meera is currently responsible for training classification models, developing text embedding pipelines, performing model evaluation, integrating semantic search, and documenting experimental results.
+
+The technologies used include Python, TensorFlow, PyTorch, NLP libraries, vector embeddings, and cloud-based AI services. The project’s strengths include automated document organization, semantic information retrieval, reduced manual document searching, and scalable AI-based processing. Current limitations include dependency on training data quality, computational requirements, model inaccuracies, and difficulty processing highly specialized documents.
+
+Future development includes improving classification accuracy, implementing Retrieval-Augmented Generation, integrating vector databases, and deploying the system as an internal document search platform. Through this project, the trainee is gaining experience in machine learning, NLP, deep learning, semantic search, model evaluation, and enterprise AI applications.

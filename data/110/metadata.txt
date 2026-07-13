@@ -1,0 +1,9 @@
+The trainee, Priya Verma, is undergoing industrial training at the GAIL Training Institute, Noida, and is working on a project titled “Employee Service Request and Workflow Management System” under the supervision of mentor Mr. Deepak Joshi, Manager (Enterprise Applications).
+
+The project aims to digitize employee service requests, automate approval workflows, track request status, and maintain centralized records. The project consists of six phases: Requirement Gathering, Database Design, Backend Development, Frontend and Service Integration, Testing, and Deployment. The trainee is currently working in the fourth phase, Frontend and Service Integration.
+
+Priya’s responsibilities include developing Spring Boot services, designing MySQL database operations, implementing REST APIs, integrating frontend interfaces, testing application modules, and containerizing the system using Docker.
+
+The technologies used include Java, Spring Boot, MySQL, HTML, CSS, Docker, and REST APIs. Project strengths include centralized request management, improved workflow visibility, reduced paperwork, and easier tracking of administrative requests. Limitations include dependency on manual approvals, limited integration with existing systems, and the requirement for strong access control.
+
+Future development plans include implementing automated notifications, role-based dashboards, analytical reports, and integration with organizational authentication services. Through the project, the trainee is gaining experience in Java backend development, database management, enterprise application architecture, Docker, REST APIs, and system integration.

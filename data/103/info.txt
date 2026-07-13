@@ -1,0 +1,6 @@
+Name: Aditya Khanna
+Age: 21
+Department Id: 1
+Phone no.: +91 98944 55667
+Position: Intern
+Email: [aditya.khanna@example.com](mailto:aditya.khanna@example.com)

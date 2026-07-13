@@ -1,0 +1,23 @@
+The trainee, Ashmi Verma, is currently undergoing industrial training at the GAIL Training Institute, Noida, and is working on a project titled “Enterprise Document Intelligence and Knowledge Retrieval System” under the supervision of mentor Ms. Radhika Malhotra, Senior Manager (Information Systems). The project aims to develop an AI-powered system capable of processing structured and unstructured organizational documents, generating searchable knowledge representations, and providing employees with accurate information through natural-language queries.
+
+The project follows a six-phase development lifecycle consisting of Requirement Analysis and Data Collection, Document Processing Pipeline Design, Data Ingestion and Preprocessing, Retrieval-Augmented Generation Integration, Testing and Retrieval Optimization, and Deployment with Performance Monitoring. The trainee is currently working in the fourth phase, Retrieval-Augmented Generation Integration.
+
+During the initial Requirement Analysis and Data Collection phase, different types of enterprise documents and information retrieval requirements were studied. Common challenges associated with manual document searching, inconsistent document structures, and information accessibility were identified. The second phase focused on designing the document processing architecture and defining workflows for data extraction, document parsing, metadata generation, text chunking, embedding generation, and information retrieval.
+
+During the Data Ingestion and Preprocessing phase, Python-based pipelines were developed to extract and process information from structured and unstructured data sources. The trainee contributed to document parsing, text preprocessing, chunk generation, metadata creation, and preparation of processed information for downstream AI and Large Language Model applications.
+
+The current Retrieval-Augmented Generation Integration phase focuses on implementing semantic information retrieval, generating vector embeddings, retrieving contextually relevant document chunks, and integrating retrieved information with Large Language Models for natural-language response generation.
+
+Ashmi’s primary responsibilities include developing Python-based data processing pipelines, implementing document ingestion workflows, preprocessing enterprise documents, generating metadata, designing text chunking strategies, integrating vector-based information retrieval, testing RAG pipelines, evaluating retrieval quality, and maintaining technical documentation.
+
+The technologies involved in the project include Python, Large Language Models, Retrieval-Augmented Generation, vector embeddings, semantic search, PostgreSQL, pgvector, Pandas, NumPy, Databricks, REST APIs, Git, and cloud-based data processing technologies.
+
+The project’s major strengths include automated processing of large document collections, semantic information retrieval, reduced time spent manually searching organizational records, support for both structured and unstructured information, scalable data ingestion pipelines, and context-aware natural-language responses.
+
+Current limitations of the system include dependency on document quality and consistency, inaccurate retrieval when user queries are ambiguous, increased computational requirements for processing large document collections, possible hallucinations in LLM-generated responses, and the requirement for continuous evaluation of embedding and retrieval strategies.
+
+Future development plans include implementing hybrid search techniques, improving metadata-based filtering, introducing advanced document reranking mechanisms, optimizing vector retrieval performance, implementing role-based information access, improving response validation, and deploying the completed system on the organization’s internal infrastructure.
+
+The project team consists of five trainees working collaboratively on data ingestion, database management, AI and RAG development, backend integration, testing, and deployment planning. Weekly technical review sessions are conducted with the project mentor to evaluate development progress, retrieval accuracy, system performance, and potential improvements.
+
+Through this project, the trainee is gaining hands-on experience in Generative AI, Large Language Models, Retrieval-Augmented Generation, enterprise data processing, Python development, document intelligence, semantic search, vector databases, PostgreSQL, pgvector, Databricks, backend integration, AI system evaluation, and professional software development practices.
