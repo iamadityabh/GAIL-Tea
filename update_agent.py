@@ -8,27 +8,48 @@ engine = get_db_engine()
 extractor_llm, _ = get_llms()
 embedder = get_embedder()
 
+
 # ==========================================
-# 0. CACHE MANAGER (New!)
+# 0. CACHE MANAGER (Fixed DB Upsert)
 # ==========================================
 def refresh_departments_cache(db_engine):
     """Fetches all departments and saves them as a single JSON block in cached_data table."""
-    with db_engine.connect() as conn:
-        rows = conn.execute(text("SELECT department_id, department_name, head_name, landline_ext FROM departments;")).fetchall()
-        dept_list = [
-            {
-                "department_id": r[0], 
-                "department_name": r[1],
-                "head_name": r[2] if r[2] else "N/A",
-                "landline_ext": r[3] if r[3] else "N/A"
-            } 
-            for r in rows
-        ]
-        conn.execute(
-            text("UPDATE cached_data SET value = :val WHERE key = 'all_departments';"),
-            {"val": json.dumps(dept_list)}
-        )
-        conn.commit()
+    try:
+        with db_engine.connect() as conn:
+            # 1. Fetch current departments
+            rows = conn.execute(text("SELECT department_id, department_name, head_name, landline_ext FROM departments;")).fetchall()
+            dept_list = [
+                {
+                    "department_id": r[0], 
+                    "department_name": r[1],
+                    "head_name": r[2] if r[2] else "N/A",
+                    "landline_ext": r[3] if r[3] else "N/A"
+                } 
+                for r in rows
+            ]
+            
+            json_val = json.dumps(dept_list)
+            
+            # 2. Check if the key already exists in the table
+            existing = conn.execute(text("SELECT 1 FROM cached_data WHERE key = 'all_departments';")).fetchone()
+            
+            # 3. Insert or Update based on existence
+            if existing:
+                conn.execute(
+                    text("UPDATE cached_data SET value = :val WHERE key = 'all_departments';"),
+                    {"val": json_val}
+                )
+                print("✅ Cache UPDATED in database.")
+            else:
+                conn.execute(
+                    text("INSERT INTO cached_data (key, value) VALUES ('all_departments', :val);"),
+                    {"val": json_val}
+                )
+                print("✅ Cache INSERTED in database.")
+                
+            conn.commit()
+    except Exception as e:
+        print(f"❌ Cache Refresh Error: {e}")
 
 # ==========================================
 # 1. MCP PROMPTS
