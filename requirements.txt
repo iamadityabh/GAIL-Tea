@@ -1,0 +1,17 @@
+psycopg2-binary
+sentence-transformers
+PyPDF2
+langchain
+langchain-community
+langchain-core
+langchain-experimental
+sqlalchemy
+langchain-ollama
+streamlit
+langchain-groq
+torchvision
+dotenv
+fastapi 
+uvicorn 
+pydantic 
+fastapi-cors
