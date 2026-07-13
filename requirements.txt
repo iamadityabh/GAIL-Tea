@@ -11,3 +11,10 @@ streamlit
 langchain-groq
 torchvision
 dotenv
+fastapi 
+uvicorn 
+pydantic 
+fastapi-cors
+pdfplumber 
+pytesseract 
+pdf2image
