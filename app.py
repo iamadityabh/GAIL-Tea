@@ -69,15 +69,19 @@ def main():
                     
                     if dept_name:
                         try:
-                            with engine.connect() as conn:
+                            with engine.begin() as conn:  # 🔥 engine.begin() use kiya taaki auto-commit ho jaye
                                 conn.execute(
                                     text("""
                                         INSERT INTO departments (department_id, department_name, head_name, landline_ext) 
                                         VALUES (:id, :name, :head, :landline)
                                     """), 
-                                    {"id": dept_id, "name": dept_name, "head": head_name, "landline": landline}
+                                    {
+                                        "id": dept_id, 
+                                        "name": dept_name, 
+                                        "head": head_name if head_name else "N/A",      # 🔥 FIX: Empty string check
+                                        "landline": landline if landline else "N/A"     # 🔥 FIX: Empty string check
+                                    }
                                 )
-                                conn.commit()
                             refresh_departments_cache(engine)
                             print(f"✅ Department '{dept_name}' added and cache synced!")
                         except Exception as e:
@@ -87,9 +91,8 @@ def main():
                         
                 elif action == "2":
                     try:
-                        with engine.connect() as conn:
+                        with engine.begin() as conn:
                             conn.execute(text("DELETE FROM departments WHERE department_id = :id"), {"id": dept_id})
-                            conn.commit()
                         refresh_departments_cache(engine)
                         print(f"✅ Department ID {dept_id} deleted and cache synced!")
                     except Exception as e:
