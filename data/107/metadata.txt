@@ -1,0 +1,11 @@
+The trainee, Yash Malhotra, is undergoing industrial training at GAIL (India) Limited as a Business Information Systems Intern and is contributing to the development of an “AI-Powered Enterprise Knowledge and Employee Support Chatbot.” The project focuses on automating employee support, improving internal information retrieval, and exploring Agentic AI applications for organizational workflows.
+
+The project follows six phases: Enterprise Requirement Analysis, Knowledge Architecture Design, AI Prototype Development, Agent and Backend Integration, Evaluation and Security Testing, and Deployment Planning. The trainee is currently working in the fourth phase, Agent and Backend Integration.
+
+Completed activities include analyzing enterprise chatbot use cases, identifying employee information requirements, designing conversational workflows, evaluating LLM capabilities, and developing initial AI prototypes. Yash is currently contributing to LLM application development, prompt engineering, FastAPI backend integration, REST API development, database connectivity, Agentic AI workflows, and response evaluation.
+
+The technologies involved include Python, FastAPI, Google Gemini, Large Language Models, prompt engineering, MongoDB, Redis, AWS services, REST APIs, Git, and GitHub. Weekly technical reviews are conducted to analyze project progress, chatbot response quality, integration challenges, and potential enterprise applications.
+
+The project’s strengths include automated employee support, intelligent information retrieval, scalable backend architecture, and reduced dependency on manual information searches. Current limitations include LLM hallucinations, enterprise data privacy requirements, API dependency, response latency, and the complexity of integrating multiple internal information systems.
+
+Future work includes implementing Retrieval-Augmented Generation, strengthening response validation, introducing secure role-based access, improving agent capabilities, and evaluating deployment on internal organizational infrastructure. Through this project, the trainee is gaining experience in enterprise AI systems, LLM applications, Agentic AI, backend development, API integration, prompt engineering, and industrial digital transformation.

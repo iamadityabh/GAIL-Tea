@@ -1,0 +1,114 @@
+{
+  "backend": "config",
+  "results": [
+    {
+      "category": "extraction",
+      "name": "name_only",
+      "passed": true,
+      "latency": 0.4691474437713623,
+      "detail": "OK"
+    },
+    {
+      "category": "extraction",
+      "name": "department_only",
+      "passed": true,
+      "latency": 0.26783156394958496,
+      "detail": "OK"
+    },
+    {
+      "category": "extraction",
+      "name": "project_phase",
+      "passed": true,
+      "latency": 0.16446542739868164,
+      "detail": "OK"
+    },
+    {
+      "category": "extraction",
+      "name": "tech_stack",
+      "passed": false,
+      "latency": 0.18134593963623047,
+      "detail": "tech_stack: expected~'NLP' got=['nlp']"
+    },
+    {
+      "category": "extraction",
+      "name": "no_entities",
+      "passed": true,
+      "latency": 0.26412439346313477,
+      "detail": "OK"
+    },
+    {
+      "category": "synthesis:single",
+      "name": "phone_number_exact",
+      "passed": true,
+      "latency": 0.3389925956726074,
+      "detail": "answer contains the exact phone number from structured data"
+    },
+    {
+      "category": "synthesis:single",
+      "name": "position_conflict",
+      "passed": true,
+      "latency": 0.34043169021606445,
+      "detail": "answer surfaces BOTH conflicting position values (Intern vs Software Intern)"
+    },
+    {
+      "category": "synthesis:single",
+      "name": "mentor_lookup",
+      "passed": true,
+      "latency": 0.20690393447875977,
+      "detail": "answer contains mentor name from structured data"
+    },
+    {
+      "category": "synthesis:single",
+      "name": "no_hallucination",
+      "passed": true,
+      "latency": 0.2100389003753662,
+      "detail": "answer honestly states the info is unavailable, does not invent a blood group"
+    },
+    {
+      "category": "synthesis:overall",
+      "name": "dept_head_lookup",
+      "passed": true,
+      "latency": 1.3798985481262207,
+      "detail": "answer contains correct department head from departments JSON"
+    },
+    {
+      "category": "synthesis:overall",
+      "name": "dept_landline",
+      "passed": true,
+      "latency": 13.58872675895691,
+      "detail": "answer contains correct landline extension"
+    },
+    {
+      "category": "synthesis:overall",
+      "name": "dept_list_names_only",
+      "passed": true,
+      "latency": 8.356161117553711,
+      "detail": "answer lists all 5 department names WITHOUT dumping landline extensions (precision rule)"
+    },
+    {
+      "category": "synthesis:event",
+      "name": "event_datetime_location",
+      "passed": true,
+      "latency": 5.169367790222168,
+      "detail": "answer contains correct event date AND location"
+    },
+    {
+      "category": "synthesis:event",
+      "name": "event_list_names_only",
+      "passed": true,
+      "latency": 3.6212334632873535,
+      "detail": "answer lists ONLY event name, not date/location (strict precision rule)"
+    },
+    {
+      "category": "synthesis:event",
+      "name": "event_missing_info",
+      "passed": false,
+      "latency": 4.396363973617554,
+      "detail": "FAILED check: answer uses the exact required fallback phrase for missing event info | answer='### Registration Numbers for Orientation\n\nUnfortunately, the provided event data does not contain information about the number of people registered for the orientation.\n\nHowever, I can provide you wit...'"
+    }
+  ],
+  "summary": {
+    "total": 15,
+    "passed": 13
+  }
+}

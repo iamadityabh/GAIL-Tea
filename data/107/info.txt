@@ -1,0 +1,6 @@
+Name: Yash Malhotra
+Age: 21
+Department Id: 2
+Phone no.: 8287060901
+Position: Business Information Systems Intern
+Email: [yashmalhotra1231@gmail.com](mailto:yashmalhotra1231@gmail.com)

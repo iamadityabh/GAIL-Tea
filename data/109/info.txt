@@ -1,0 +1,6 @@
+Name: Rohan Gupta
+Age: 22
+Department Id: 1
+Phone no.: +91 98333 44556
+Position: Intern
+Email: [rohan.gupta@example.com](mailto:rohan.gupta@example.com)
