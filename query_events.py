@@ -24,7 +24,7 @@ Presentation Rules:
 - Use bullet points for lists.
 - Never dump raw database fields (e.g., use "Start Date" instead of "event_start_date").
 - ONLY IF providing detailed profiles for multiple events, create a separate subsection for each event.
-- Keep responses concise, professional, and easy to read.
+- Keep responses concise, professional, and easy to read and presentable.
 
 User Question: {question}
 
